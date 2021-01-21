@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+
+	"github.com/Garius6/websocket_chat/storage"
 )
 
 //Room ...
@@ -26,14 +28,14 @@ func (h *Room) run() {
 		case newMessage:
 			for client := range h.Clients {
 				client.send <- e.Data.([]byte)
-				saveMessage(h.db, e.Data.([]byte))
+				storage.SaveMessage(h.db, e.Data.([]byte))
 			}
 		case register:
 			client := e.Data.(*Client)
 			h.Clients[client] = true
-			// for _, msg := range getLastTenMessage(h.db) {
-			// 	client.send <- []byte(msg.Message)
-			// }
+			for _, msg := range storage.GetLastMessages(h.db, 5) {
+				client.send <- []byte(msg.Message)
+			}
 		case unregister:
 			if _, ok := h.Clients[e.Data.(*Client)]; ok {
 				delete(h.Clients, e.Data.(*Client))
