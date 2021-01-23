@@ -1,26 +1,29 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/Garius6/websocket_chat/storage"
 	"github.com/gorilla/mux"
 )
 
+var db *storage.Storage
+var mySigningKey = []byte("secret")
+
+func init() {
+	db := storage.New(&storage.Config{"message.sqlite3"})
+	_ = db
+}
+
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
-	if r.URL.Path != "/" {
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	http.ServeFile(w, r, "templates/home.html")
+	http.ServeFile(w, r, "static/templates/chat.html")
 }
 
 func main() {
@@ -30,13 +33,6 @@ func main() {
 
 	r.HandleFunc("/", serveHome)
 	r.HandleFunc("/ws/{chatID}", func(w http.ResponseWriter, r *http.Request) {
-		//Connect to database
-		db, err := sql.Open("sqlite3", "message.sqlite3")
-		if err != nil {
-			_ = fmt.Errorf("%s", err)
-			http.Error(w, "Something goes wrong", http.StatusInternalServerError)
-			return
-		}
 
 		//Parse route parameter
 		vars := mux.Vars(r)
@@ -45,7 +41,6 @@ func main() {
 			http.Error(w, "Not found", http.StatusNotFound)
 			return
 		}
-
 		var room *Room
 		//If route correct and chat exist -> connecting to chat
 		//else create new chat
@@ -55,11 +50,22 @@ func main() {
 			rooms[chatID] = newRoom(db)
 			room = rooms[chatID]
 			go rooms[chatID].run()
+			for _, v := range rooms {
+				v.events <- Event{NEWCHAT, struct {
+					ID   int
+					chat *Room
+				}{chatID, room}}
+			}
 		}
 
 		serveWs(room, w, r)
 	})
 
+	r.PathPrefix("/static").Handler(
+		http.StripPrefix("/static/",
+			http.FileServer(http.Dir("./static")),
+		),
+	)
 	http.Handle("/", r)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
