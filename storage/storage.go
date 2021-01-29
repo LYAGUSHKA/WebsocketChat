@@ -2,7 +2,6 @@ package storage
 
 import (
 	"database/sql"
-	"fmt"
 
 	_ "github.com/mattn/go-sqlite3" //...
 )
@@ -47,39 +46,4 @@ func (s *Storage) User() *UserRepository {
 	}
 
 	return s.userRepository
-}
-
-//Message ...
-type Message struct {
-	ID      int
-	Message string
-}
-
-func (s *Storage) SaveMessage(msg []byte) {
-	message := string(msg)
-	_, err := s.Db.Exec("INSERT INTO message(message) VALUES($1)", message)
-	if err != nil {
-		_ = fmt.Errorf("Storage: %s", err)
-	}
-}
-
-func (s *Storage) GetLastMessages(number int) []Message {
-
-	rows, err := s.Db.Query("SELECT * FROM message ORDER BY id ASC LIMIT 2, ?", number)
-	if err != nil {
-		_ = fmt.Errorf("Storage: %s", err)
-	}
-	var messages []Message
-
-	for rows.Next() {
-		s := Message{}
-		err = rows.Scan(&s.ID, &s.Message)
-		if err != nil {
-			_ = fmt.Errorf("Rows: %s", err)
-			continue
-		}
-		messages = append(messages, s)
-	}
-
-	return messages
 }
