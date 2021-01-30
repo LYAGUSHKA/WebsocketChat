@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <link rel="stylesheet" href="static/styles/reg.css">
+    <link rel="stylesheet" href="static/icons/css/all.css">
+</head>
+<body>
+   
+    <div class="full-height">
+        <div class="reg">
+            <div class="reg__header">
+                <div class="reg__register"><p>регистрация</p></div>
+                <div class="reg__login"><p>авторизация</p></div>
+            </div>
+            <div class="reg__body login disabled">
+                <form method="POST" action="/login">
+                    <input name="login" type="text" placeholder="Login">
+                    <input name="password" type="text" placeholder="Password">
+                    <button>войти</button>
+                </form>
+            </div>
+            
+            <div class="reg__body register">
+                <form action="/">
+                    <input type="text" placeholder="Фамилия">
+                    <input type="text" placeholder="Имя">
+                    <input type="text" placeholder="Логин">
+                    <input type="text" placeholder="Придумайте пароль">
+                    <button>регистрация</button>
+                </form>
+            </div>
+            <div class="reg__footer">
+                <div class="add-reg">войти через:</div>
+                <div class="icons">
+                    <div><i class="fab fa-vk"></i></div>
+                    <div><i class="fab fa-facebook-f"></i></div>
+                    <div><i class="fab fa-github"></i></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="static/scripts/reg.js"></script>
+</body>
+</html>

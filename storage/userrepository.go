@@ -38,3 +38,19 @@ func (r *UserRepository) FindByNickname(nickname string) (*model.User, error) {
 	}
 	return u, nil
 }
+
+func (r *UserRepository) FindByID(ID int) (*model.User, error) {
+	u := &model.User{}
+	if err := r.Storage.Db.QueryRow(
+		"SELECT * FROM users WHERE id = $1",
+		ID,
+	).Scan(
+		&u.ID,
+		&u.Nickname,
+		&u.EncryptedPassword,
+	); err != nil {
+		return nil, err
+	}
+
+	return u, nil
+}
