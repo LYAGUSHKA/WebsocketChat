@@ -1,63 +1,46 @@
-package main
+package sockets
 
 import "github.com/Garius6/websocket_chat/storage"
-
-const (
-	NEWMESSAGE = iota
-	unregister
-	register
-	NEWCHAT
-)
-
-//Event ...
-type Event struct {
-	Type int
-	Data interface{}
-	// Sender interface{}
-}
 
 //Room ...
 type Room struct {
 	Clients map[*Client]bool
 	Storage *storage.Storage
-	events  chan Event
+	Events  chan Event
 }
 
-func newRoom(db *storage.Storage) *Room {
+func NewRoom(db *storage.Storage) *Room {
 	return &Room{
 		Clients: make(map[*Client]bool),
 		Storage: db,
-		events:  make(chan Event),
+		Events:  make(chan Event),
 	}
 }
 
-func (h *Room) run() {
+func (h *Room) RunRoom() {
 	chats := make(map[int]*Room)
 	for {
-		e := <-h.events
+		e := <-h.Events
 		switch e.Type {
-		case NEWMESSAGE:
+		case NewMessage:
 			for client := range h.Clients {
 				client.send <- e.Data.(Message)
 				//storage.SaveMessage(h.db, e.Data.([]byte))
 			}
-		case register:
+		case Register:
 			client := e.Data.(*Client)
 			h.Clients[client] = true
 			// for _, msg := range storage.GetLastMessages(h.db, 5) {
 			// 	client.send <- []byte(msg.Message)
 			// }
-		case unregister:
+		case Unregister:
 			if _, ok := h.Clients[e.Data.(*Client)]; ok {
 				delete(h.Clients, e.Data.(*Client))
 				close(e.Data.(*Client).send)
 			}
-		case NEWCHAT:
-			chatInfo := e.Data.(struct {
-				ID   int
-				chat *Room
-			})
-			chats[chatInfo.ID] = chatInfo.chat
+		case NewChat:
+			chatInfo := e.Data.(ChatInfo)
+			chats[chatInfo.ID] = chatInfo.Chat
 		}
 
 	}

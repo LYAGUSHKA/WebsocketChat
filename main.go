@@ -2,32 +2,39 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
-	"github.com/Garius6/websocket_chat/model"
+	"github.com/Garius6/websocket_chat/pkg/sockets"
 	"github.com/Garius6/websocket_chat/storage"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 )
 
 const (
-	sessionName            = "gopher"
+	sessionName            = "Auth"
 	ctxKey      ContextKey = iota
 )
 
 type ContextKey int8
 
+type Config struct {
+	DatabaseURL string `json:"database_url"`
+	SigningKey  string `json:"signing_key"`
+	Port        string `json:"port"`
+}
+
 type Chat struct {
 	Store        *storage.Storage
-	Rooms        map[int]*Room
-	SigningKey   []byte
+	Rooms        map[int]*sockets.Room
 	SessionStore sessions.Store
 }
 
 func (c *Chat) serveHome(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL)
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -36,14 +43,15 @@ func (c *Chat) serveHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Chat) registerHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		http.ServeFile(w, r, "static/templates/auth.html")
-	} else if r.Method == "POST" {
-		nickname := r.FormValue("login")
-		password := r.FormValue("password")
-		c.Store.User().Create(&model.User{Nickname: nickname, EncryptedPassword: password})
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	login := r.FormValue("login")
+	password := r.FormValue("password")
+	_, err := c.Store.User().Create(login, password)
+	if err != nil {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
 	}
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
+
 }
 
 func (c *Chat) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,14 +61,14 @@ func (c *Chat) loginHandler(w http.ResponseWriter, r *http.Request) {
 		nickname := r.FormValue("login")
 		password := r.FormValue("password")
 
-		u, err := c.Store.User().FindByNickname(nickname)
+		u, err := c.Store.User().FindByLogin(nickname)
 		if err != nil {
 			http.Error(w, "db", http.StatusInternalServerError)
 			return
 		}
 
-		if password != u.EncryptedPassword {
-			http.Error(w, "Password", http.StatusInternalServerError)
+		if u.ComparePassword(password) {
+			http.Error(w, "Password", http.StatusBadRequest)
 			return
 		}
 
@@ -89,24 +97,24 @@ func (c *Chat) roomHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
-	var room *Room
+	var room *sockets.Room
 	//If route correct and chat exist -> connecting to chat
 	//else create new chat
 	if _, ok := c.Rooms[chatID]; ok {
 		room = c.Rooms[chatID]
 	} else {
-		c.Rooms[chatID] = newRoom(c.Store)
+		c.Rooms[chatID] = sockets.NewRoom(c.Store)
 		room = c.Rooms[chatID]
-		go c.Rooms[chatID].run()
+		go c.Rooms[chatID].RunRoom()
 		for _, v := range c.Rooms {
-			v.events <- Event{NEWCHAT, struct {
-				ID   int
-				chat *Room
-			}{chatID, room}}
+			v.Events <- sockets.Event{
+				Type: sockets.NewChat,
+				Data: sockets.ChatInfo{ID: chatID, Chat: room},
+			}
 		}
 	}
 
-	serveWs(room, w, r)
+	sockets.ServeWs(room, w, r)
 }
 
 func (c *Chat) authenticateUser(next http.HandlerFunc) http.HandlerFunc {
@@ -134,23 +142,50 @@ func (c *Chat) authenticateUser(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
+func getConfig(configName string) (*Config, error) {
+	file, err := os.Open(configName)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	c := Config{}
+	if err = json.NewDecoder(file).Decode(&c); err != nil {
+		return nil, err
+	}
+
+	return &c, nil
+}
+
+func configureChat(c *Config) (*Chat, error) {
+	store := storage.New(&storage.Config{DatabaseURL: c.DatabaseURL})
+	if err := store.Open(); err != nil {
+		return nil, err
+	}
+
+	return &Chat{
+		Rooms:        make(map[int]*sockets.Room),
+		SessionStore: sessions.NewCookieStore([]byte(c.SigningKey)),
+		Store:        store,
+	}, nil
+}
+
 func main() {
-	c := &Chat{}
-	c.Rooms = make(map[int]*Room)
-	c.SigningKey = []byte("secret")
-	c.SessionStore = sessions.NewCookieStore(c.SigningKey)
-	c.Store = storage.New(&storage.Config{DatabaseURL: "message.sqlite3"})
-	if err := c.Store.Open(); err != nil {
+	config, err := getConfig("configs/chat.json")
+	if err != nil {
 		log.Fatal(err)
-		return
+	}
+
+	chat, err := configureChat(config)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", c.authenticateUser(c.serveHome))
-	r.HandleFunc("/login", c.loginHandler)
-	r.HandleFunc("/user/create", c.registerHandler)
-	r.HandleFunc("/ws/{chatID}", c.roomHandler)
+	r.HandleFunc("/", chat.authenticateUser(chat.serveHome))
+	r.HandleFunc("/login", chat.loginHandler)
+	r.HandleFunc("/user/create", chat.registerHandler).Methods("POST")
+	r.HandleFunc("/ws/{chatID}", chat.roomHandler)
 
 	r.PathPrefix("/static").Handler(
 		http.StripPrefix("/static/",
@@ -159,5 +194,5 @@ func main() {
 	)
 	http.Handle("/", r)
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":"+config.Port, handlers.LoggingHandler(os.Stdout, r)))
 }

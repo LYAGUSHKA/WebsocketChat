@@ -3,7 +3,6 @@ package storage_test
 import (
 	"testing"
 
-	"github.com/Garius6/websocket_chat/model"
 	"github.com/Garius6/websocket_chat/storage"
 	"github.com/stretchr/testify/assert"
 )
@@ -12,9 +11,7 @@ func TestUserRepositoryCreate(t *testing.T) {
 	s, teardown := storage.TestStore(t, databaseURL)
 	defer teardown("users")
 
-	u, err := s.User().Create(&model.User{
-		Nickname: "Anatole",
-	})
+	u, err := s.User().Create("Anatole", "123")
 	assert.NoError(t, err)
 	assert.NotNil(t, u)
 
@@ -29,14 +26,14 @@ func TestUserRepositoryFindByID(t *testing.T) {
 	defer teardown("users")
 
 	nickname := "Alexxx"
-	_, err := s.User().FindByNickname(nickname)
+	_, err := s.User().FindByLogin(nickname)
 	assert.Error(t, err)
 
-	s.User().Create(&model.User{
-		Nickname:          nickname,
-		EncryptedPassword: "Pook",
-	})
-	u, err := s.User().FindByNickname(nickname)
+	s.User().Create(
+		nickname,
+		"Pook",
+	)
+	u, err := s.User().FindByLogin(nickname)
 	assert.NoError(t, err)
 	assert.NotNil(t, u)
 }

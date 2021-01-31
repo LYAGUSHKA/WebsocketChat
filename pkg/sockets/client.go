@@ -1,4 +1,4 @@
-package main
+package sockets
 
 import (
 	"log"
@@ -29,7 +29,7 @@ type Client struct {
 
 func (c *Client) readPump() {
 	defer func() {
-		c.room.events <- Event{unregister, c}
+		c.room.Events <- Event{Unregister, c}
 		c.conn.Close()
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
@@ -45,7 +45,7 @@ func (c *Client) readPump() {
 			break
 		}
 
-		c.room.events <- Event{NEWMESSAGE, *message}
+		c.room.Events <- Event{NewMessage, *message}
 	}
 }
 
@@ -94,14 +94,14 @@ func (c *Client) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func serveWs(room *Room, w http.ResponseWriter, r *http.Request) {
+func ServeWs(room *Room, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	client := &Client{room: room, conn: conn, send: make(chan Message, 256)}
-	client.room.events <- Event{register, client}
+	client.room.Events <- Event{Register, client}
 
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.

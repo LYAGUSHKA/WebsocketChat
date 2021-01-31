@@ -1,4 +1,4 @@
-package main
+package sockets
 
 type Message struct {
 	Data string `json:"data"`

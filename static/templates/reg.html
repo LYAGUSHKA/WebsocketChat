@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Document</title>
-    <link rel="stylesheet" href="static/styles/reg.css">
-    <link rel="stylesheet" href="static/icons/css/all.css">
+    <link rel="stylesheet" href="/static/styles/reg.css">
+    <link rel="stylesheet" href="/static/icons/css/all.css">
 </head>
 <body>
    
@@ -23,11 +23,9 @@
             </div>
             
             <div class="reg__body register">
-                <form action="/">
-                    <input type="text" placeholder="Фамилия">
-                    <input type="text" placeholder="Имя">
-                    <input type="text" placeholder="Логин">
-                    <input type="text" placeholder="Придумайте пароль">
+                <form method="POST" action="/user/create">
+                    <input name="login" type="text" placeholder="Логин">
+                    <input name="password" type="text" placeholder="Придумайте пароль">
                     <button>регистрация</button>
                 </form>
             </div>
@@ -42,6 +40,6 @@
 
         </div>
     </div>
-    <script src="static/scripts/reg.js"></script>
+    <script src="/static/scripts/reg.js"></script>
 </body>
 </html>

@@ -6,10 +6,15 @@ type UserRepository struct {
 	Storage *Storage
 }
 
-func (r *UserRepository) Create(u *model.User) (*model.User, error) {
+func (r *UserRepository) Create(login string, password string) (*model.User, error) {
+	u := &model.User{Login: login, Password: password}
+	err := u.BeforeCreate()
+	if err != nil {
+		return nil, err
+	}
 	result, err := r.Storage.Db.Exec(
 		"INSERT INTO users(nickname, encrypted_password) VALUES($1, $2); SELECT last_insert_rowid()",
-		u.Nickname,
+		u.Login,
 		u.EncryptedPassword,
 	)
 	if err != nil {
@@ -24,14 +29,14 @@ func (r *UserRepository) Create(u *model.User) (*model.User, error) {
 	return u, nil
 }
 
-func (r *UserRepository) FindByNickname(nickname string) (*model.User, error) {
+func (r *UserRepository) FindByLogin(nickname string) (*model.User, error) {
 	u := &model.User{}
 	if err := r.Storage.Db.QueryRow(
 		"SELECT * FROM users WHERE nickname = $1",
 		nickname,
 	).Scan(
 		&u.ID,
-		&u.Nickname,
+		&u.Login,
 		&u.EncryptedPassword,
 	); err != nil {
 		return nil, err
@@ -46,7 +51,7 @@ func (r *UserRepository) FindByID(ID int) (*model.User, error) {
 		ID,
 	).Scan(
 		&u.ID,
-		&u.Nickname,
+		&u.Login,
 		&u.EncryptedPassword,
 	); err != nil {
 		return nil, err
