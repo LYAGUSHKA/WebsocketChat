@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Garius6/websocket_chat/model"
 	"github.com/gorilla/websocket"
 )
 
@@ -24,7 +25,7 @@ var upgrader = websocket.Upgrader{
 type Client struct {
 	conn *websocket.Conn
 	room *Room
-	send chan Message
+	send chan model.Message
 }
 
 func (c *Client) readPump() {
@@ -36,7 +37,7 @@ func (c *Client) readPump() {
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		message := newMessage()
+		message := model.NewMessage()
 		err := c.conn.ReadJSON(message)
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
@@ -100,7 +101,7 @@ func ServeWs(room *Room, w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	client := &Client{room: room, conn: conn, send: make(chan Message, 256)}
+	client := &Client{room: room, conn: conn, send: make(chan model.Message, 256)}
 	client.room.Events <- Event{Register, client}
 
 	// Allow collection of memory referenced by the caller by doing all work in

@@ -1,6 +1,9 @@
 package sockets
 
-import "github.com/Garius6/websocket_chat/storage"
+import (
+	"github.com/Garius6/websocket_chat/model"
+	"github.com/Garius6/websocket_chat/storage"
+)
 
 //Room ...
 type Room struct {
@@ -24,7 +27,7 @@ func (h *Room) RunRoom() {
 		switch e.Type {
 		case NewMessage:
 			for client := range h.Clients {
-				client.send <- e.Data.(Message)
+				client.send <- e.Data.(model.Message)
 				//storage.SaveMessage(h.db, e.Data.([]byte))
 			}
 		case Register:
