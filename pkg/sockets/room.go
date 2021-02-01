@@ -3,6 +3,7 @@ package sockets
 import (
 	"github.com/Garius6/websocket_chat/model"
 	"github.com/Garius6/websocket_chat/storage"
+	"log"
 )
 
 //Room ...
@@ -27,15 +28,16 @@ func (h *Room) RunRoom() {
 		switch e.Type {
 		case NewMessage:
 			for client := range h.Clients {
-				client.send <- e.Data.(model.Message)
-				//storage.SaveMessage(h.db, e.Data.([]byte))
+				m := e.Data.(model.Message)
+				m2 := model.NewMessage()
+				m2.Data = m.Data
+				client.send <- m
+				//h.Storage.Db.Exec("INSERT INTO messages(m_from, data, m_to, chat_id) VALUES(?,?,?,?)", m.From, m.Data, m.To, m.ChatID)
+				log.Println(h.Storage.User().Storage == nil)
 			}
 		case Register:
 			client := e.Data.(*Client)
 			h.Clients[client] = true
-			// for _, msg := range storage.GetLastMessages(h.db, 5) {
-			// 	client.send <- []byte(msg.Message)
-			// }
 		case Unregister:
 			if _, ok := h.Clients[e.Data.(*Client)]; ok {
 				delete(h.Clients, e.Data.(*Client))

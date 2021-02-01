@@ -47,6 +47,7 @@ func (c *Client) readPump() {
 		}
 
 		c.room.Events <- Event{NewMessage, *message}
+		log.Println(*message)
 	}
 }
 

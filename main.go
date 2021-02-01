@@ -179,7 +179,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", chat.authenticateUser(chat.serveHome))
