@@ -164,7 +164,10 @@ margin: 0;
     background: #17212b;
 }
 
+
+/* Окно сообщений */
 .log-above {
+    overflow-x: hidden;
     overflow-y: scroll;
     height: 100vh;
     background: #0e1621;
@@ -197,12 +200,58 @@ margin: 0;
 .msg-out {
     text-align: end;
     margin-left: auto;
-    margin-right: 40px;
+    margin-right: 25px;
+    position: relative;
+}
+
+.msg-out::before {
+    content: '';
+    width: 20px;
+    height: 10px;
+    background: grey;
+    position: absolute;
+    right: -10px;
+    bottom: 0;
+}
+
+.msg-out::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border-left: 10px #0e1621 solid;
+    border-radius: 35%;
+    position: absolute;
+    right: -40px;
+    bottom: 0;
 }
 
 .msg-in {
+    position: relative;
     margin-left: 40px;
 }
+
+.msg-in::before {
+    content: '';
+    width: 20px;
+    height: 10px;
+    background: grey;
+    position: absolute;
+    left: -10px;
+    bottom: 0;
+}
+
+.msg-in::after {
+    content: '';
+    width: 50px;
+    height: 50px;
+    background: white;
+    border: 8px #0e1621 solid;
+    border-radius: 35%;
+    position: absolute;
+    left: -50px;
+    bottom: -2px;
+}
+/* окно сообщений */ 
 
 
 .disabled {
