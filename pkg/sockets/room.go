@@ -1,8 +1,6 @@
 package sockets
 
 import (
-	"log"
-
 	"github.com/Garius6/websocket_chat/model"
 	"github.com/Garius6/websocket_chat/pkg/storage"
 )
@@ -29,7 +27,6 @@ func (h *Room) RunRoom() {
 		switch e.Type {
 		case NewMessage:
 			m := e.Data.(model.Message)
-			log.Println(h.Storage.Message().Create(&m))
 			for client := range h.Clients {
 				client.send <- m
 			}
