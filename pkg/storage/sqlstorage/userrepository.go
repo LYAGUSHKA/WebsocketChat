@@ -1,4 +1,4 @@
-package storage
+package sqlstorage
 
 import "github.com/Garius6/websocket_chat/model"
 
@@ -8,10 +8,11 @@ type UserRepository struct {
 
 func (r *UserRepository) Create(login string, password string) (*model.User, error) {
 	u := &model.User{Login: login, Password: password}
-	err := u.BeforeCreate()
-	if err != nil {
+
+	if err := u.BeforeCreate(); err != nil {
 		return nil, err
 	}
+
 	result, err := r.Storage.Db.Exec(
 		"INSERT INTO users(nickname, encrypted_password) VALUES($1, $2); SELECT last_insert_rowid()",
 		u.Login,

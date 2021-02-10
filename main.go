@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -9,7 +10,8 @@ import (
 	"strconv"
 
 	"github.com/Garius6/websocket_chat/pkg/sockets"
-	"github.com/Garius6/websocket_chat/storage"
+	"github.com/Garius6/websocket_chat/pkg/storage"
+	"github.com/Garius6/websocket_chat/pkg/storage/sqlstorage"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -29,7 +31,7 @@ type Config struct {
 }
 
 type Chat struct {
-	Store        *storage.Storage
+	Store        storage.Storage
 	Rooms        map[int]*sockets.Room
 	SessionStore sessions.Store
 }
@@ -156,11 +158,21 @@ func getConfig(configName string) (*Config, error) {
 	return &c, nil
 }
 
-func configureChat(c *Config) (*Chat, error) {
-	store := storage.New(&storage.Config{DatabaseURL: c.DatabaseURL})
-	if err := store.Open(); err != nil {
+func newDB(dbURL string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", dbURL)
+	if err != nil {
 		return nil, err
 	}
+
+	return db, nil
+}
+
+func configureChat(c *Config) (*Chat, error) {
+	db, err := newDB(c.DatabaseURL)
+	if err != nil {
+		return nil, err
+	}
+	store := sqlstorage.New(db)
 
 	return &Chat{
 		Rooms:        make(map[int]*sockets.Room),
@@ -179,7 +191,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", chat.authenticateUser(chat.serveHome))
