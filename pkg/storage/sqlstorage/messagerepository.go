@@ -1,6 +1,8 @@
-package storage
+package sqlstorage
 
 import (
+	"log"
+
 	"github.com/Garius6/websocket_chat/model"
 )
 
@@ -8,7 +10,8 @@ type MessageRepository struct {
 	Storage *Storage
 }
 
-func (r *MessageRepository) Create(m *model.Message) (*model.Message, error) {
+func (r *MessageRepository) Create(m *model.Message) error {
+	log.Println(*m)
 	_, err := r.Storage.Db.Exec(
 		"INSERT INTO messages(m_from, data, m_to, chat_id) VALUES(?,?,?,?)",
 		m.From,
@@ -18,14 +21,14 @@ func (r *MessageRepository) Create(m *model.Message) (*model.Message, error) {
 	)
 
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
-	return m, nil
+	return nil
 }
 
 //GetLastMessages return last count messages from chatID chat
-func (r *MessageRepository) GetLastMessages(chatID, offset, count int) ([]model.Message, error) {
+func (r *MessageRepository) GetLastMessagesInChat(chatID, offset, count int) ([]model.Message, error) {
 	msgs := make([]model.Message, 0)
 	messages, err := r.Storage.Db.Query(
 		"SELECT * FROM messages WHERE chat_id=$1 LIMIT $2, $3",

@@ -1,19 +1,20 @@
 package sockets
 
 import (
-	"github.com/Garius6/websocket_chat/model"
-	"github.com/Garius6/websocket_chat/storage"
 	"log"
+
+	"github.com/Garius6/websocket_chat/model"
+	"github.com/Garius6/websocket_chat/pkg/storage"
 )
 
 //Room ...
 type Room struct {
 	Clients map[*Client]bool
-	Storage *storage.Storage
+	Storage storage.Storage
 	Events  chan Event
 }
 
-func NewRoom(db *storage.Storage) *Room {
+func NewRoom(db storage.Storage) *Room {
 	return &Room{
 		Clients: make(map[*Client]bool),
 		Storage: db,
@@ -27,13 +28,10 @@ func (h *Room) RunRoom() {
 		e := <-h.Events
 		switch e.Type {
 		case NewMessage:
+			m := e.Data.(model.Message)
+			log.Println(h.Storage.Message().Create(&m))
 			for client := range h.Clients {
-				m := e.Data.(model.Message)
-				m2 := model.NewMessage()
-				m2.Data = m.Data
 				client.send <- m
-				//h.Storage.Db.Exec("INSERT INTO messages(m_from, data, m_to, chat_id) VALUES(?,?,?,?)", m.From, m.Data, m.To, m.ChatID)
-				log.Println(h.Storage.User().Storage == nil)
 			}
 		case Register:
 			client := e.Data.(*Client)

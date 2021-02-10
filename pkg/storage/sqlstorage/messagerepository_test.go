@@ -1,10 +1,10 @@
-package storage_test
+package sqlstorage_test
 
 import (
 	"testing"
 
 	"github.com/Garius6/websocket_chat/model"
-	"github.com/Garius6/websocket_chat/storage"
+	"github.com/Garius6/websocket_chat/pkg/storage"
 	"github.com/stretchr/testify/assert"
 )
 
