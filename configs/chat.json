@@ -1,5 +1,5 @@
 {
-    "database_url": "./message.sqlite3",
+    "database_url": "./chat.sqlite3",
     "signing_key": "secret",
     "port":"8080"
 }

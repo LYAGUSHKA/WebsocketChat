@@ -65,6 +65,7 @@ func (c *Chat) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 		u, err := c.Store.User().FindByLogin(nickname)
 		if err != nil {
+			log.Println("loginHandler: ", err)
 			http.Error(w, "db", http.StatusInternalServerError)
 			return
 		}
@@ -193,8 +194,8 @@ func main() {
 	}
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", chat.authenticateUser(chat.serveHome))
-	r.HandleFunc("/login", chat.loginHandler)
+	r.HandleFunc("/", chat.loginHandler)
+	r.HandleFunc("/index", chat.authenticateUser(chat.serveHome))
 	r.HandleFunc("/user/create", chat.registerHandler).Methods("POST")
 	r.HandleFunc("/ws/{chatID}", chat.roomHandler)
 

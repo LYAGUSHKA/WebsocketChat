@@ -16,8 +16,6 @@ func (r *MessageRepository) Create(m *model.Message) error {
 		"INSERT INTO messages(m_from, data, m_to, chat_id) VALUES(?,?,?,?)",
 		m.From,
 		m.Data,
-		m.To,
-		m.ChatID,
 	)
 
 	if err != nil {
@@ -42,7 +40,7 @@ func (r *MessageRepository) GetLastMessagesInChat(chatID, offset, count int) ([]
 
 	for messages.Next() {
 		m := model.Message{}
-		err = messages.Scan(&m.From, &m.Data, &m.To, &m.ChatID)
+		err = messages.Scan(&m.From, &m.Data)
 		if err != nil {
 			return nil, err
 		}

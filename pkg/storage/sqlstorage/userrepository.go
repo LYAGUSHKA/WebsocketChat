@@ -1,6 +1,10 @@
 package sqlstorage
 
-import "github.com/Garius6/websocket_chat/model"
+import (
+	"log"
+
+	"github.com/Garius6/websocket_chat/model"
+)
 
 type UserRepository struct {
 	Storage *Storage
@@ -19,10 +23,12 @@ func (r *UserRepository) Create(login string, password string) (*model.User, err
 		u.EncryptedPassword,
 	)
 	if err != nil {
+		log.Println("UserRepository.Create: ", err)
 		return nil, err
 	}
 	buff, err := result.LastInsertId()
 	if err != nil {
+		log.Println("UserRepository.Create: ", err)
 		return nil, err
 	}
 
@@ -40,6 +46,7 @@ func (r *UserRepository) FindByLogin(nickname string) (*model.User, error) {
 		&u.Login,
 		&u.EncryptedPassword,
 	); err != nil {
+		log.Println("UserRepository.FindByLogin: ", err)
 		return nil, err
 	}
 	return u, nil
@@ -55,6 +62,7 @@ func (r *UserRepository) FindByID(ID int) (*model.User, error) {
 		&u.Login,
 		&u.EncryptedPassword,
 	); err != nil {
+		log.Println("UserRepository.FindByID: ", err)
 		return nil, err
 	}
 
